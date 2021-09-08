@@ -36,7 +36,11 @@ From the gramar specification we can infer the lexical unit types (tokens) of th
 9. block closing
 10. comma
 
-Your goal is to write a lexical analyzer for the language described by the grammar.  Get the code template (in Scala) under src.  The output of your lexical analyzer should be a list of pairs containing a lexical unit followed by its token number, in the order of their appearance.  Below are some source codes (with expected outputs) for you to try.  
+Your goal is to write a lexical analyzer for the language described by the grammar.  Get the code template (in Scala) under src.  The output of your lexical analyzer should be a list of pairs containing a lexical unit followed by its token number, in the order of their appearance.  
+
+You just need to submit LexicalAnalyzer.scala this time!
+
+Below are some source codes (with expected outputs) for you to try.  
 
 source1.java 
 ```
