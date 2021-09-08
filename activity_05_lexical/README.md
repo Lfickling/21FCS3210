@@ -1,6 +1,6 @@
 # Activity 05
 
-## A Lexical Analyzer
+## A Lexical Analyzer - Example 1
 
 ## Goal
 
