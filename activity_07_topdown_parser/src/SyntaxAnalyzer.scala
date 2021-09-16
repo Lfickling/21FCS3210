@@ -44,97 +44,43 @@ class SyntaxAnalyzer(private var source: String) {
   private def parseExpr() = {
 
     // TODOd: create a parse tree with non-terminal value "expression"
-    var tree = new Tree("expression")
 
     // TODOd: parse a term
-    tree.add(parseTerm())
 
     // TODOd: parse a expressionPrime
-    tree.add(parseExprPrime())
 
     // TODOd: return the parse tree
-    tree
   }
 
   // term = factor term'
   private def parseTerm() = {
 
     // TODOd: create a parse tree with non-terminal value "expression"
-    var tree = new Tree("term")
 
     // TODOd: parse a factor
-    tree.add(parseFactor())
 
     // TODOd: parse a termPrime
-    tree.add(parseTermPrime())
 
     // TODOd: return the parse tree
-    tree
   }
 
   // factor = identifier | literal | ´(´ expression ´)´
   private def parseFactor(): Tree = {
 
     // TODOd: create a parse tree with non-terminal value "factor"
-    var tree = new Tree("factor")
 
-    var lexeme = getLexeme()
-    if (lexeme.getToken() == Token.IDENTIFIER || lexeme.getToken() == Token.LITERAL) {
-      tree.add(new Tree(lexeme.getLabel()))  // or tree.add(new Tree(lexeme))
-      nextLexeme() // call nextLexeme when you are done consuming a token
-    }
-    else if (lexeme.getToken() == Token.OPEN_PAR) {
-      tree.add(new Tree(lexeme.getLabel()))
-      nextLexeme()
-      tree.add(parseExpr())
-      lexeme = getLexeme()
-      if (lexeme.getToken() == Token.CLOSE_PAR) {
-        tree.add(new Tree(lexeme.getLabel()))
-        nextLexeme()
-      }
-      else
-        throw new Exception("Syntax Analyzer Error: \"closing parenthesis\" expected!")
-    }
-    else
-      throw new Exception("Syntax Analyzer Error: identifier, literal, or \"opening parenthesis\" expected!")
 
-    tree // return the tree (don't forget)
   }
 
   // term' = ( ´*´ | ´/´ ) factor term' | epsilon
   def parseTermPrime(): Tree = {
 
-    var tree = new Tree("termPrime")
-
-    var lexeme = getLexeme()
-    if (lexeme.getToken() == Token.MULTIPLICATION || lexeme.getToken() == Token.DIVISION) {
-      tree.add(new Tree(lexeme.getLabel()))
-      nextLexeme()
-      tree.add(parseFactor())
-      tree.add(parseTermPrime())
-    }
-    else
-      tree.add(new Tree("epsilon"))
-
-    tree
   }
 
   // expression' = ( ´+´  | ´-´ ) term expression' | epsilon
   def parseExprPrime(): Tree = {
 
-    var tree = new Tree("exprPrime")
 
-    var lexeme = getLexeme()
-    if (lexeme.getToken() == Token.ADDITION || lexeme.getToken() == Token.SUBTRACTION) {
-      tree.add(new Tree(lexeme.getLabel()))
-      nextLexeme()
-      tree.add(parseTerm())
-      tree.add(parseExprPrime())
-    }
-    else
-      tree.add(new Tree("epsilon"))
-
-    tree
   }
 
 }
