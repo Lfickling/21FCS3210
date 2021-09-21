@@ -1,0 +1,3 @@
+bool_exp = bool_exp ( ´and´ | ´or´ ) bool_exp
+bool_exp = factor ( ´>´ | ´>=´ | ´=´ | ´<=´ | ´<´ ) factor
+factor   = ´identifier´ | ´literal´
