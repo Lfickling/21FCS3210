@@ -1,9 +1,7 @@
-import java.io.{FileOutputStream, ObjectOutputStream}
-
 /*
- * CS3210 - Principles of Programming Languages - Fall 2020
+ * CS3210 - Principles of Programming Languages - Fall 2021
  * Instructor: Thyago Mota
- * Description: Activity 08 - Syntax Analyzer
+ * Description: Activity 08 - SyntaxAnalyzer (an iterable syntax analyzer)
  */
 
 /*
@@ -22,203 +20,182 @@ integer           = digit {digit}
 
 class SyntaxAnalyzer(private var source: String) {
 
-  private var it = new LexicalAnalyzer(source).iterator
-  private var lexemeUnit: LexemeUnit = null
+  private val it = new LexicalAnalyzer(source).iterator
+  private var current: Lexeme = null
 
-  private def getLexemeUnit() = {
-    if (lexemeUnit == null) {
-      lexemeUnit = it.next()
-//      println(lexemeUnit)
+  // returns the current lexeme
+  private def getLexeme(): Lexeme = {
+    if (current == null) {
+      current = it.next
     }
+    //    println(current)
+    current
   }
 
-  def parse(): Tree = {
+  // advances the input one lexeme
+  private def nextLexeme() = {
+    current = it.next
+  }
+
+  // TODO: finish the recursive descent parser
+
+  // parses the program, returning its corresponding parse tree
+  def parse() = {
     parseSyntax()
   }
 
-  // syntax = syntax-rule { syntax-rule }
+  // syntax = syntax-rule { ´\n´ syntax-rule }
   private def parseSyntax() = {
     val tree = new Tree("syntax")
-    getLexemeUnit()
-    while (lexemeUnit.getToken() != Token.EOF) {
+    tree.add(parseSyntaxRule())
+    while (getLexeme().getToken() == Token.NEW_LINE) {
+      val lexeme = getLexeme()
+      tree.add(new Tree(lexeme.getLabel()))
+      nextLexeme()
       tree.add(parseSyntaxRule())
-      if (lexemeUnit.getToken() == Token.NEW_LINE) {
-        tree.add(new Tree(lexemeUnit.getLexeme()))
-        lexemeUnit = null
-        getLexemeUnit()
-      }
     }
     tree
   }
 
   // syntax-rule = meta-identifier ´=´ definitions-list
-  private def parseSyntaxRule(): Tree = {
-//    println("parseSyntaxRule")
+  private def parseSyntaxRule() = {
     val tree = new Tree("syntax-rule")
-    getLexemeUnit()
-    if (lexemeUnit.getToken() == Token.META_IDENT) {
-      tree.add(new Tree(lexemeUnit.getLexeme()))
-      lexemeUnit = null
-      getLexemeUnit()
-      if (lexemeUnit.getToken() == Token.DEFINING_SYMBOL) {
-        tree.add(new Tree(lexemeUnit.getLexeme()))
-        lexemeUnit = null
-        getLexemeUnit()
-        tree.add(parseDefinitionList())
+    var lexeme = getLexeme()
+    if (lexeme.getToken() == Token.META_IDENTIFIER) {
+      tree.add(new Tree(lexeme.getLabel()))
+      nextLexeme()
+      lexeme = getLexeme()
+      if (lexeme.getToken() == Token.EQUAL) {
+        tree.add(new Tree(lexeme.getLabel()))
+        nextLexeme()
+        tree.add(parseDefinitionsList())
       }
       else
-        throw new Exception("Syntax Analyzer Error: defining symbol expected!")
+        throw new Exception("Syntax error: '=' expected!")
     }
     else
-      throw new Exception("Syntax Analyzer Error: meta identifier expected!")
+      throw new Exception("Syntax error: meta-identifier expected!")
     tree
   }
 
   // definitions-list = single-definition { ´|´ single-definition }
-  private def parseDefinitionList(): Tree = {
-//    println("parseDefinitionList")
-    val tree = new Tree("definition-list")
-    getLexemeUnit()
-    var done = false
-    while (!done) {
+  private def parseDefinitionsList(): Tree = {
+    val tree = new Tree("definitions-list")
+    tree.add(parseSingleDefinition())
+    while (getLexeme().getToken() == Token.PIPE) {
+      val lexeme = getLexeme()
+      tree.add(new Tree(lexeme.getLabel()))
+      nextLexeme()
       tree.add(parseSingleDefinition())
-      if (lexemeUnit.getToken() == Token.PIPE) {
-        tree.add(new Tree(lexemeUnit.getLexeme()))
-        lexemeUnit = null
-        getLexemeUnit()
-      }
-      else
-        done = true
     }
     tree
   }
 
   // single-definition = term { term }
-  private def parseSingleDefinition(): Tree = {
-//    println("parseSingleDefinition")
+  private def parseSingleDefinition() = {
     val tree = new Tree("single-definition")
-    getLexemeUnit()
+    tree.add(parseTerm())
     var done = false
     while (!done) {
-      tree.add(parseTerm())
-//      println(lexemeUnit)
-      if (lexemeUnit.getToken() == Token.NEW_LINE) {
-        tree.add(new Tree(lexemeUnit.getLexeme()))
-        lexemeUnit = null
-        getLexemeUnit()
+      val lexeme = getLexeme()
+      if (lexeme.getToken() != Token.OPEN_BRACKET &&
+      lexeme.getToken() != Token.OPEN_BRACE &&
+      lexeme.getToken() != Token.OPEN_PAR &&
+      lexeme.getToken() != Token.META_IDENTIFIER &&
+      lexeme.getToken() != Token.TERMINAL_STRING)
         done = true
-      }
-      else if (lexemeUnit.getToken() == Token.PIPE ||
-        lexemeUnit.getToken() == Token.NEW_LINE ||
-        lexemeUnit.getToken() == Token.CLOSE_PAR ||
-        lexemeUnit.getToken() == Token.CLOSE_BRACE ||
-        lexemeUnit.getToken() == Token.CLOSE_BRACKET
-      )
-        done = true
+      else
+        tree.add(parseTerm())
     }
     tree
   }
 
   // term = optional-sequence | repeated-sequence | grouped-sequence | meta-identifier | terminal-string
-  private def parseTerm(): Tree = {
-//    println("parseTerm")
+  private def parseTerm() = {
     val tree = new Tree("term")
-    getLexemeUnit()
-//    println(lexemeUnit)
-    if (lexemeUnit.getToken() == Token.OPEN_BRACKET)
+    val lexeme = getLexeme()
+    if (lexeme.getToken() == Token.OPEN_BRACKET)
       tree.add(parseOptionalSequence())
-    else if (lexemeUnit.getToken() == Token.OPEN_BRACE)
+    else if (lexeme.getToken() == Token.OPEN_BRACE)
       tree.add(parseRepeatedSequence())
-    else if (lexemeUnit.getToken() == Token.OPEN_PAR)
+    else if (lexeme.getToken() == Token.OPEN_PAR)
       tree.add(parseGroupedSequence())
-    else if (lexemeUnit.getToken() == Token.META_IDENT || lexemeUnit.getToken() == Token.TERMINAL_STRING)  {
-      tree.add(new Tree(lexemeUnit.getLexeme()))
-      lexemeUnit = null
-      getLexemeUnit()
+    else if (lexeme.getToken() == Token.META_IDENTIFIER || lexeme.getToken() == Token.TERMINAL_STRING) {
+      tree.add(new Tree(lexeme.getLabel()))
+      nextLexeme()
     }
-    else if (lexemeUnit.getToken() != Token.PIPE &&
-      lexemeUnit.getToken() != Token.NEW_LINE &&
-      lexemeUnit.getToken() != Token.CLOSE_PAR &&
-      lexemeUnit.getToken() != Token.CLOSE_BRACE &&
-      lexemeUnit.getToken() != Token.CLOSE_BRACKET
-     )
-      throw new Exception("Syntax Analyzer Error: valid term expected!")
+    else
+      throw new Exception("Syntax error: '[', '{', '(', meta-identifier, or terminal-string expected!")
     tree
   }
 
   // optional-sequence = ´[´ definitions-list ´]´
-  private def parseOptionalSequence(): Tree = {
-//    println("parseOptionalSequence")
+  private def parseOptionalSequence() = {
     val tree = new Tree("optional-sequence")
-    getLexemeUnit()
-    if (lexemeUnit.getToken() == Token.OPEN_BRACKET) {
-      tree.add(new Tree(lexemeUnit.getLexeme()))
-      lexemeUnit = null
-      getLexemeUnit()
-      tree.add(parseDefinitionList())
-      if (lexemeUnit.getToken() == Token.CLOSE_BRACKET) {
-        tree.add(new Tree(lexemeUnit.getLexeme()))
-        lexemeUnit = null
-        getLexemeUnit()
+    var lexeme = getLexeme()
+    if (lexeme.getToken() == Token.OPEN_BRACKET) {
+      tree.add(new Tree(lexeme.getLabel()))
+      nextLexeme()
+      tree.add(parseDefinitionsList())
+      lexeme = getLexeme()
+      if (lexeme.getToken() == Token.CLOSE_BRACKET) {
+        tree.add(new Tree(lexeme.getLabel()))
+        nextLexeme()
       }
       else
-        throw new Exception("Syntax Analyzer Error: closing bracket expected!")
+        throw new Exception("Syntax error: ']' expected!")
     }
     else
-      throw new Exception("Syntax Analyzer Error: opening bracket expected!")
+      throw new Exception("Syntax error: '[' expected!")
     tree
   }
 
   // repeated-sequence = ´{´ definitions-list ´}´
-  private def parseRepeatedSequence(): Tree = {
-//    println("parseRepeatedSequence")
+  private def parseRepeatedSequence() = {
     val tree = new Tree("repeated-sequence")
-    getLexemeUnit()
-    if (lexemeUnit.getToken() == Token.OPEN_BRACE) {
-      tree.add(new Tree(lexemeUnit.getLexeme()))
-      lexemeUnit = null
-      getLexemeUnit()
-      tree.add(parseDefinitionList())
-      if (lexemeUnit.getToken() == Token.CLOSE_BRACE) {
-        tree.add(new Tree(lexemeUnit.getLexeme()))
-        lexemeUnit = null
-        getLexemeUnit()
+    var lexeme = getLexeme()
+    if (lexeme.getToken() == Token.OPEN_BRACE) {
+      tree.add(new Tree(lexeme.getLabel()))
+      nextLexeme()
+      tree.add(parseDefinitionsList())
+      lexeme = getLexeme()
+      if (lexeme.getToken() == Token.CLOSE_BRACE) {
+        tree.add(new Tree(lexeme.getLabel()))
+        nextLexeme()
       }
       else
-        throw new Exception("Syntax Analyzer Error: closing curly brace expected!")
+        throw new Exception("Syntax error: '}' expected!")
     }
     else
-      throw new Exception("Syntax Analyzer Error: opening curly brace expected!")
+      throw new Exception("Syntax error: '{' expected!")
     tree
   }
 
-  // grouped-sequence  = ´(´ definitions-list ´)´
-  private def parseGroupedSequence(): Tree = {
-//    println("parseGroupedSequence")
+  // grouped-sequence = ´(´ definitions-list ´)´
+  private def parseGroupedSequence() = {
     val tree = new Tree("grouped-sequence")
-    getLexemeUnit()
-    if (lexemeUnit.getToken() == Token.OPEN_PAR) {
-      tree.add(new Tree(lexemeUnit.getLexeme()))
-      lexemeUnit = null
-      getLexemeUnit()
-      tree.add(parseDefinitionList())
-      if (lexemeUnit.getToken() == Token.CLOSE_PAR) {
-        tree.add(new Tree(lexemeUnit.getLexeme()))
-        lexemeUnit = null
-        getLexemeUnit()
+    var lexeme = getLexeme()
+    if (lexeme.getToken() == Token.OPEN_PAR) {
+      tree.add(new Tree(lexeme.getLabel()))
+      nextLexeme()
+      tree.add(parseDefinitionsList())
+      lexeme = getLexeme()
+      if (lexeme.getToken() == Token.CLOSE_PAR) {
+        tree.add(new Tree(lexeme.getLabel()))
+        nextLexeme()
       }
       else
-        throw new Exception("Syntax Analyzer Error: closing parenthesis expected!")
+        throw new Exception("Syntax error: ')' expected!")
     }
     else
-      throw new Exception("Syntax Analyzer Error: opening parenthesis expected!")
+      throw new Exception("Syntax error: '(' expected!")
     tree
   }
-
 }
 
 object SyntaxAnalyzer {
   def main(args: Array[String]): Unit = {
+
     // check if source file was passed through the command-line
     if (args.length != 1) {
       print("Missing source file!")
@@ -228,10 +205,5 @@ object SyntaxAnalyzer {
     val syntaxAnalyzer = new SyntaxAnalyzer(args(0))
     val parseTree = syntaxAnalyzer.parse()
     print(parseTree)
-
-    // serializing the parse tree
-    val oos = new ObjectOutputStream(new FileOutputStream(args(0) + ".tree"))
-    oos.writeObject(parseTree)
-    oos.close
   }
 }

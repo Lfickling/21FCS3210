@@ -1,213 +1,188 @@
+/*
+ * CS3210 - Principles of Programming Languages - Fall 2021
+ * Instructor: Thyago Mota
+ * Description: Activity 08 - LexicalAnalyzer (an iterable lexical analyzer)
+ */
+
+import LexicalAnalyzer.{BLANKS, DIGITS, LETTERS, NEW_LINE, PUNCTUATIONS, SPECIALS}
 import scala.io.Source
 
-/*
- * CS3210 - Principles of Programming Languages - Fall 2020
- * Instructor: Thyago Mota
- * Description: Activity 07 - Lexical Analyzer
- */
+class LexicalAnalyzer(private var source: String) extends Iterable[Lexeme]{
 
-/*
-syntax            = syntax-rule { syntax-rule }
-syntax-rule       = meta-identifier ´=´ definitions-list
-meta-identifier   = letter { ( letter | digit | ´-´ | ´_´ ) }
-definitions-list  = single-definition { ´|´ single-definition }
-single-definition = term { term }
-term              = optional-sequence | repeated-sequence | grouped-sequence | meta-identifier | terminal-string
-optional-sequence = ´[´ definitions-list ´]´
-repeated-sequence = ´{´ definitions-list ´}´
-grouped-sequence  = ´(´ definitions-list ´)´
-terminal-string   = ´´´ character { character } ´´´
-integer           = digit {digit}
- */
-
-class LexicalAnalyzer(private var source: String) extends Iterable[LexemeUnit] {
-
-  private var input = ""
+  var input = ""
   for (line <- Source.fromFile(source).getLines)
-    input += line + "\n"
-  // determines the class of a given character
-  private def getCharClass(c: Char): CharClass.Value = {
-    if (LexicalAnalyzer.LETTERS.contains(c))
-      CharClass.LETTER
-    else if (LexicalAnalyzer.DIGITS.contains(c))
-      CharClass.DIGIT
-    else if (LexicalAnalyzer.BLANKS.contains(c))
-      CharClass.BLANK
-    else if (c == '+' || c == '-' || c == '*' || c == '/')
-      CharClass.OPERATOR
-    else if (c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}')
-      CharClass.DELIMITER
-    else
-      CharClass.OTHER
+    input += line + NEW_LINE
+  input = input.trim
+
+  // checks if reached eof
+  private def eof: Boolean = {
+    input.length == 0
   }
 
-  // reads the input until a non-blank character is found, returning the input updated
-  private def readBlanks: Unit = {
+  // returns the current char (requires checking for eof before call)
+  private def getChar(): Char = {
+    input(0)
+  }
+
+  // advances the input one character (requires checking for eof before call)
+  private def nextChar() = {
+    input = input.substring(1)
+  }
+
+  // checks if input has a blank character ahead
+  private def hasBlank(): Boolean = {
+    BLANKS.contains(getChar)
+  }
+
+  // reads the input until a non-blank character is found, updating the input
+  def readBlanks: Unit = {
     var foundNonBlank = false
-    while (input.length > 0 && !foundNonBlank) {
-      val c = input(0)
-      if (getCharClass(c) == CharClass.BLANK)
-        input = input.substring(1)
+    while (!eof && !foundNonBlank) {
+      val c = getChar
+      if (hasBlank)
+        nextChar
       else
         foundNonBlank = true
     }
   }
 
-  def iterator: Iterator[LexemeUnit] = {
-    new Iterator[LexemeUnit] {
+  // checks if input has a letter ahead
+  private def hasLetter(): Boolean = {
+    LETTERS.contains(getChar)
+  }
 
+  // checks if input has a digit ahead
+  private def hasDigit(): Boolean = {
+    DIGITS.contains(getChar)
+  }
+
+  // checks if input has a special character ahead
+  private def hasSpecial(): Boolean = {
+    SPECIALS.contains(getChar)
+  }
+
+  // checks if input has a punctuation character ahead
+  private def hasPunctuation(): Boolean = {
+    PUNCTUATIONS.contains(getChar)
+  }
+
+  // returns an iterator for the lexical analyzer
+  override def iterator: Iterator[Lexeme] = {
+
+    new Iterator[Lexeme] {
+
+      // returns true/false depending whether there is a lexeme to be read from the input
       override def hasNext: Boolean = {
         readBlanks
-        input.length > 0
+        !eof
       }
 
-      override def next(): LexemeUnit = {
+      // returns the next lexeme (or end of line if there isn't any lexeme left to be read)
+      // TODO: finish this part of the code
+      override def next(): Lexeme = {
+
         if (!hasNext)
-          new LexemeUnit("", Token.EOF)
-        else {
-          var lexeme = ""
-          readBlanks
-          if (input.length == 0)
-            new LexemeUnit(lexeme, Token.EOF)
-          else {
-            var c = input(0)
-            var charClass = getCharClass(c)
+          return new Lexeme("eof", Token.EOF)
 
-            // TODO: recognize a meta-identifier
-            if (charClass == CharClass.LETTER) {
-              input = input.substring(1)
-              lexeme += c
-              var done = false
-              while (!done) {
-                if (input.length == 0)
-                  done = true
-                else {
-                  c = input(0)
-                  charClass = getCharClass(c)
-                  if (charClass == CharClass.LETTER || charClass == CharClass.DIGIT || c == '-' || c == '_') {
-                    input = input.substring(1)
-                    lexeme += c
-                  }
-                  else
-                    done = true
-                }
-              }
-              return new LexemeUnit(lexeme, Token.META_IDENT)
-            }
-
-            // TODO: recognize a terminal-string
-            if (c == '´') {
-              input = input.substring(1)
-              lexeme += c
-              var done = false
-              while (!done) {
-                if (input.length == 0)
-                  done = true
-                else {
-                  c = input(0)
-                  charClass = getCharClass(c)
-                  if (c != '´') {
-                    input = input.substring(1)
-                    lexeme += c
-                  }
-                  else
-                    done = true
-                }
-              }
-              input = input.substring(1)
-              lexeme += c
-              return new LexemeUnit(lexeme, Token.TERMINAL_STRING)
-            }
-
-            // TODO: recognize new line symbol
-            if (c == '\n') {
-              input = input.substring(1)
-              lexeme += "nl"
-              return new LexemeUnit(lexeme, Token.NEW_LINE)
-            }
-
-            // TODO: recognize defining symbol
-            if (c == '=') {
-              input = input.substring(1)
-              lexeme += c
-              return new LexemeUnit(lexeme, Token.DEFINING_SYMBOL)
-            }
-
-            // TODO: recognize pipe symbol
-            if (c == '|') {
-              input = input.substring(1)
-              lexeme += c
-              return new LexemeUnit(lexeme, Token.PIPE)
-            }
-
-            // TODO: recognize open straight bracket symbol
-            if (c == '[') {
-              input = input.substring(1)
-              lexeme += c
-              return new LexemeUnit(lexeme, Token.OPEN_BRACKET)
-            }
-
-            // TODO: recognize close straight bracket symbol
-            if (c == ']') {
-              input = input.substring(1)
-              lexeme += c
-              return new LexemeUnit(lexeme, Token.CLOSE_BRACKET)
-            }
-
-            // TODO: recognize open curly brace symbol
-            if (c == '{') {
-              input = input.substring(1)
-              lexeme += c
-              return new LexemeUnit(lexeme, Token.OPEN_BRACE)
-            }
-
-            // TODO: recognize close curly brace symbol
-            if (c == '}') {
-              input = input.substring(1)
-              lexeme += c
-              return new LexemeUnit(lexeme, Token.CLOSE_BRACE)
-            }
-
-            // TODO: recognize open parenthesis symbol
-            if (c == '(') {
-              input = input.substring(1)
-              lexeme += c
-              return new LexemeUnit(lexeme, Token.OPEN_PAR)
-            }
-
-            // TODO: recognize close parenthesis symbol
-            if (c == ')') {
-              input = input.substring(1)
-              lexeme += c
-              return new LexemeUnit(lexeme, Token.CLOSE_PAR)
-            }
-
-            // throw an exception if an unrecognizable symbol is found
-            throw new Exception("Lexical Analyzer Error: unrecognizable symbol '" + c + "' found!")
+        readBlanks
+        var c = getChar
+        var str = c + ""
+        if (c == '\n') {
+          nextChar()
+          return new Lexeme("\\n", Token.NEW_LINE);
+        }
+        else if (c == '=') {
+          nextChar()
+          return new Lexeme(str, Token.EQUAL);
+        }
+        else if (c == '|') {
+          nextChar()
+          return new Lexeme(str, Token.PIPE);
+        }
+        else if (c == '[') {
+          nextChar()
+          return new Lexeme(str, Token.OPEN_BRACKET);
+        }
+        else if (c == ']') {
+          nextChar()
+          return new Lexeme(str, Token.CLOSE_BRACKET);
+        }
+        else if (c == '{') {
+          nextChar()
+          return new Lexeme(str, Token.OPEN_BRACE);
+        }
+        else if (c == '}') {
+          nextChar()
+          return new Lexeme(str, Token.CLOSE_BRACE);
+        }
+        else if (c == '(') {
+          nextChar()
+          return new Lexeme(str, Token.OPEN_PAR);
+        }
+        else if (c == ')') {
+          nextChar()
+          return new Lexeme(str, Token.CLOSE_PAR);
+        }
+        else if (c == '´') {
+          nextChar()
+          while (!eof && getChar() != '\n' && getChar() != '´') {
+            str += getChar()
+            nextChar()
+          }
+          if (getChar() == '´') {
+            str += getChar()
+            nextChar()
+            return new Lexeme(str, Token.TERMINAL_STRING)
           }
         }
-      } // end next
-    } // end 'new' iterator
-  } // end iterator method
-} // end LexicalAnalyzer class
+        else if (hasLetter()) {
+          nextChar()
+          while (!eof && ( hasLetter() || hasDigit() || getChar() == '-' || getChar() == '_') ) {
+            str += getChar()
+            nextChar()
+          }
+          return new Lexeme(str, Token.META_IDENTIFIER)
+        }
+        else if (hasDigit()) {
+          nextChar()
+          while (!eof && hasDigit() ) {
+            str += getChar()
+            nextChar()
+          }
+          return new Lexeme(str, Token.INTEGER)
+        }
+
+        // throw an exception if an unrecognizable symbol is found
+//        print("'" + getChar() + "'")
+        throw new Exception("Lexical Analyzer Error: unrecognizable symbol found!")
+      }
+    }
+  }
+}
 
 object LexicalAnalyzer {
-  val LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  val DIGITS  = "0123456789"
-  val BLANKS  = " \t"
+  val BLANKS       = " \t"  // new line (\n) was removed from BLANKS because it is a token for the grammar
+  val NEW_LINE     = '\n'
+  val LETTERS      = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  val DIGITS       = "0123456789"
+  val PUNCTUATIONS = ".,;:?!"
+  val SPECIALS     = "<_@#$%^&()-+='/\\[]{}|"
+//  val WORD_TO_TOKEN = Map(
+//    "key"        -> Token.A_TOKEN
+//  )
 
   def main(args: Array[String]): Unit = {
-    // check if source file was passed through the command-line
+    // checks if source file was passed through the command-line
     if (args.length != 1) {
       print("Missing source file!")
       System.exit(1)
     }
 
+    // iterates over the lexical analyzer, printing the lexemes found
     val lex = new LexicalAnalyzer(args(0))
     val it = lex.iterator
-    while (it.hasNext) {
-      val lexemeUnit = it.next()
-      println(lexemeUnit)
-    }
+    while (it.hasNext)
+      println(it.next())
+
   } // end main method
-} // end LexicalAnalyzer object
+}

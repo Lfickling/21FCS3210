@@ -1,25 +1,41 @@
 /*
- * CS3210 - Principles of Programming Languages - Fall 2020
+ * CS3210 - Principles of Programming Languages - Falll 2021
  * Instructor: Thyago Mota
- * Description: Activity 08 - Tree
+ * Description: Activity 08 - Tree (each tree node has a label, a key-value map, and branches)
  */
 
 import scala.collection.mutable.ArrayBuffer
 
-class Tree(var label: String) extends Serializable {
+class Tree(private var label: String) {
 
-  private val branches: ArrayBuffer[Tree] = new ArrayBuffer[Tree]
+  private val attributes = scala.collection.mutable.Map[String, String]()
+  attributes("label") = label
+  private val branches = new ArrayBuffer[Tree]()
 
-  def add(branch: Tree): Unit = branches.addOne(branch)
+  def setAttribute(key: String, value: String): Unit = {
+    attributes(key) = value
+  }
 
-  def getBranches = branches
+  def getAttribute(key: String) = {
+    attributes.get(key)
+  }
+
+  def add(branch: Tree): Unit = {
+    branches += branch
+  }
+
+  def getBranches() = branches
 
   private def print(current: Tree, tabs: String): String = {
     var out = ""
     if (current == null)
       out
     else {
-      out += tabs + current.label + "\n"
+      out += tabs
+      out += "{"
+      for (key <- current.attributes.keys)
+        out += key + ":" + current.attributes.get(key).get + ", "
+      out = out.substring(0, out.length - 2)  + "}\n"
       for (branch <- current.branches)
         out += print(branch, tabs + "\t")
       out
@@ -27,6 +43,7 @@ class Tree(var label: String) extends Serializable {
   }
 
   override def toString = print(this, "")
+
 }
 
 // example code
@@ -46,3 +63,4 @@ object Tree {
     print(tree)
   }
 }
+
