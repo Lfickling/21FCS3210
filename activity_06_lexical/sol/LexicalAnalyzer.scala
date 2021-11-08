@@ -2,7 +2,7 @@
  * CS3210 - Principles of Programming Languages - Fall 2021
  * Instructor: Thyago Mota
  * Description: Activity 06 - LexicalAnalyzer (an iterable lexical analyzer)
- * Student(s) Name(s):
+ * Student(s) Name(s):x
  */
 
 import LexicalAnalyzer.{BLANKS, DIGITS, LETTERS, NEW_LINE, PUNCTUATIONS, SPECIALS}

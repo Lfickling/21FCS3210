@@ -1,6 +1,6 @@
 /*
  * CS3210 - Principles of Programming Languages - Fall 2021
- * Instructor: Thyago Mota
+ * Instructor: Thyago Mota x
  * Description: Activity 08 - SyntaxAnalyzer (an iterable syntax analyzer)
  */
 

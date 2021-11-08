@@ -2,7 +2,7 @@
  * CS3210 - Principles of Programming Languages - Fall 2021
  * Instructor: Thyago Mota
  * Description: Activity 06 - Token
- * Student(s) Name(s):
+ * Student(s) Name(s):x
  */
 
 object Token extends Enumeration {
