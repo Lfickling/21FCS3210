@@ -34,7 +34,8 @@ func crack(pin string) {
 
 func main() {
 
-	rand.Seed(time.Hour.Microseconds())
+	// corrected!
+	rand.Seed(int64(time.Now().Nanosecond()))
 
 	// TODO: generate a random PIN with size PIN_SIZE to crack
 

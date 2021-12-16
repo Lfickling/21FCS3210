@@ -1,5 +1,5 @@
 /*
- * CS3210 - Principles of Programming Languages - Fall 2020
+ * CS3210 - Principles of Programming Languages - Fall 2021
  * Instructor: Thyago Mota
  * Description: Activity 22 - Rocket Launch Simulation
  * go run RocketLaunch.go
